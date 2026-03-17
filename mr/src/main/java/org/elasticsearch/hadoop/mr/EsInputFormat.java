@@ -412,7 +412,7 @@ public class EsInputFormat<K, V> extends InputFormat<K, V> implements org.apache
     public org.apache.hadoop.mapred.InputSplit[] getSplits(JobConf job, int numSplits) throws IOException {
 
         Settings settings = HadoopSettingsManager.loadFrom(job);
-        Collection<PartitionDefinition> partitions = RestService.findPartitions(settings, log, null);
+        Collection<PartitionDefinition> partitions = RestService.findPartitions(settings, log);
         EsInputSplit[] splits = new EsInputSplit[partitions.size()];
 
         int index = 0;

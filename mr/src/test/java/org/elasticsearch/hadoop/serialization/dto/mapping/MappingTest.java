@@ -21,10 +21,10 @@ package org.elasticsearch.hadoop.serialization.dto.mapping;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.elasticsearch.hadoop.EsHadoopIllegalArgumentException;
 import org.elasticsearch.hadoop.thirdparty.codehaus.jackson.map.ObjectMapper;
@@ -60,6 +60,7 @@ import static org.elasticsearch.hadoop.serialization.dto.mapping.MappingUtils.fi
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
@@ -438,19 +439,106 @@ public class MappingTest {
 
     @Test(expected = EsHadoopIllegalArgumentException.class)
     public void testMultipleIndexMultipleConflictingFields() throws Exception {
-        MappingSet mappings = getMappingsForResource("multiple-indices-multiple-conflicting-types.json");
+        getMappingsForResource("multiple-indices-multiple-conflicting-types.json");
+    }
 
-        assertNotNull(ensureAndGet("index1", "type1", mappings));
-        assertNotNull(ensureAndGet("index2", "type2", mappings));
+    @Test
+    public void testIncludeFieldsAvoidsConflict() throws Exception {
+        // When includeFields filters out the conflicting field2 (null vs keyword), no exception should be thrown
+        Map value = new ObjectMapper().readValue(
+                getClass().getResourceAsStream(mappingDirectory + "/multiple-indices-multiple-conflicting-types.json"), Map.class);
+        Set<String> includeFields = new java.util.HashSet<>(java.util.Arrays.asList("field1", "field3"));
+        MappingSet mappings = FieldParser.parseMappings(value, !typeless, includeFields);
 
         Mapping mapping = mappings.getResolvedView();
         assertEquals("*", mapping.getIndex());
         assertEquals("*", mapping.getType());
+        assertEquals(2, mapping.getFields().length);
         assertEquals("field1", mapping.getFields()[0].name());
         assertEquals(KEYWORD, mapping.getFields()[0].type());
         assertEquals("field3", mapping.getFields()[1].name());
         assertEquals(FLOAT, mapping.getFields()[1].type());
-        assertEquals("field4", mapping.getFields()[2].name());
-        assertEquals(INTEGER, mapping.getFields()[2].type());
+    }
+
+    @Test
+    public void testIncludeFieldsEmptyReturnsAll() throws Exception {
+        // Empty includeFields should return all fields (same as no filtering)
+        Map value = new ObjectMapper().readValue(
+                getClass().getResourceAsStream(mappingDirectory + "/basic.json"), Map.class);
+        MappingSet withoutFilter = FieldParser.parseMappings(value, !typeless);
+        value = new ObjectMapper().readValue(
+                getClass().getResourceAsStream(mappingDirectory + "/basic.json"), Map.class);
+        MappingSet withEmptyFilter = FieldParser.parseMappings(value, !typeless, Collections.emptySet());
+
+        assertEquals(withoutFilter.getResolvedView().getFields().length,
+                withEmptyFilter.getResolvedView().getFields().length);
+    }
+
+    @Test
+    public void testIncludeFieldsFiltersToSubset() throws Exception {
+        // Only requested fields should appear in the resolved view
+        Map value = new ObjectMapper().readValue(
+                getClass().getResourceAsStream(mappingDirectory + "/basic.json"), Map.class);
+        MappingSet allFields = FieldParser.parseMappings(value, !typeless);
+        int totalFields = allFields.getResolvedView().getFields().length;
+
+        // Pick just the first field
+        String firstFieldName = allFields.getResolvedView().getFields()[0].name();
+        value = new ObjectMapper().readValue(
+                getClass().getResourceAsStream(mappingDirectory + "/basic.json"), Map.class);
+        MappingSet filtered = FieldParser.parseMappings(value, !typeless,
+                singleton(firstFieldName));
+
+        assertEquals(1, filtered.getResolvedView().getFields().length);
+        assertEquals(firstFieldName, filtered.getResolvedView().getFields()[0].name());
+    }
+
+    @Test
+    public void testBackwardCompatibleConstructor() throws Exception {
+        // The no-arg includeFields constructor should work identically to passing empty collection
+        Map value = new ObjectMapper().readValue(
+                getClass().getResourceAsStream(mappingDirectory + "/basic.json"), Map.class);
+        MappingSet mappings = FieldParser.parseMappings(value, !typeless);
+        assertNotNull(mappings.getResolvedView());
+        assertTrue(mappings.getResolvedView().getFields().length > 0);
+    }
+
+    @Test
+    public void testIncludeFieldsNestedMapping() throws Exception {
+        // nested-mapping.json has: name(string), description(string), employees(nested: name, salary)
+        // Include parent compound field + one child — should traverse correctly
+        Map value = new ObjectMapper().readValue(
+                getClass().getResourceAsStream(mappingDirectory + "/nested-mapping.json"), Map.class);
+        Set<String> includeFields = new java.util.HashSet<>(java.util.Arrays.asList(
+                "name", "employees", "employees.name"));
+        MappingSet mappings = FieldParser.parseMappings(value, !typeless, includeFields);
+
+        Mapping mapping = mappings.getResolvedView();
+        assertNotNull(mapping);
+        // Top level: name + employees (description excluded)
+        assertEquals(2, mapping.getFields().length);
+        assertEquals("name", mapping.getFields()[0].name());
+        // employees is compound — check its children
+        Field employees = mapping.getFields()[1];
+        assertEquals("employees", employees.name());
+        assertTrue(employees.properties().length > 0);
+        // Only employees.name should be included (salary excluded)
+        assertEquals(1, employees.properties().length);
+        assertEquals("name", employees.properties()[0].name());
+    }
+
+    @Test
+    public void testIncludeFieldsWithoutParentSkipsChildren() throws Exception {
+        // If includeFields has only a leaf "employees.name" but NOT the parent "employees",
+        // the parent is skipped at the top level and children are never visited
+        Map value = new ObjectMapper().readValue(
+                getClass().getResourceAsStream(mappingDirectory + "/nested-mapping.json"), Map.class);
+        Set<String> includeFields = singleton("employees.name");
+        MappingSet mappings = FieldParser.parseMappings(value, !typeless, includeFields);
+
+        Mapping mapping = mappings.getResolvedView();
+        assertNotNull(mapping);
+        // Parent "employees" not in includeFields, so nothing gets through
+        assertEquals(0, mapping.getFields().length);
     }
 }

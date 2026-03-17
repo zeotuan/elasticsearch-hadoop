@@ -240,7 +240,7 @@ private[sql] case class ElasticsearchRelation(parameters: Map[String, String], @
 
   @transient lazy val valueWriter = { new ScalaValueWriter }
 
-    override def schema: StructType = lazySchema.struct
+  override def schema: StructType = userSchema.getOrElse(lazySchema.struct)
 
   // TableScan
   def buildScan(): RDD[Row] = buildScan(Array.empty)

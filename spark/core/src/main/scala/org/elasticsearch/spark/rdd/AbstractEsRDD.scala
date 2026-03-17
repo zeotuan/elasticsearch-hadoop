@@ -19,6 +19,8 @@
 package org.elasticsearch.spark.rdd;
 
 import JDKCollectionConvertersCompat.Converters._
+import scala.reflect.ClassTag
+import scala.annotation.meta.param
 import org.apache.commons.logging.LogFactory
 import org.apache.spark.Partition
 import org.apache.spark.SparkContext
@@ -30,7 +32,7 @@ import org.elasticsearch.hadoop.rest.PartitionDefinition
 import org.elasticsearch.hadoop.util.ObjectUtils
 import org.elasticsearch.spark.cfg.SparkSettingsManager
 import org.elasticsearch.hadoop.rest.RestRepository
-import org.elasticsearch.hadoop.serialization.dto.mapping.{Mapping, MappingSet}
+import org.elasticsearch.hadoop.serialization.dto.mapping.Mapping
 
 private[spark] abstract class AbstractEsRDD[T: ClassTag](
   @(transient @param) sc: SparkContext,

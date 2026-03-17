@@ -20,7 +20,14 @@
 package org.elasticsearch.hadoop.serialization.dto.mapping;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.elasticsearch.hadoop.EsHadoopIllegalArgumentException;
 import org.elasticsearch.hadoop.serialization.FieldType;
@@ -41,7 +48,11 @@ public class MappingSet implements Serializable {
     private final Map<String, Map<String, Mapping>> indexTypeMap = new HashMap<String, Map<String, Mapping>>();
     private final Mapping resolvedSchema;
 
-    public MappingSet(List<Mapping> mappings, Collection<String> includeFields) {
+    public MappingSet(List<Mapping> mappings) {
+        this(mappings, Collections.emptySet());
+    }
+
+    public MappingSet(List<Mapping> mappings, Set<String> includeFields) {
         if (mappings.isEmpty()) {
             this.empty = true;
             this.resolvedSchema = new Mapping(RESOLVED_INDEX_NAME, RESOLVED_MAPPING_NAME, Field.NO_FIELDS);
@@ -77,7 +88,7 @@ public class MappingSet implements Serializable {
         }
     }
 
-    private static Mapping mergeMappings(List<Mapping> mappings, Collection<String> includeFields) {
+    private static Mapping mergeMappings(List<Mapping> mappings, Set<String> includeFields) {
         Map<String, Object[]> fieldMap = new LinkedHashMap<String, Object[]>();
         for (Mapping mapping: mappings) {
             for (Field field : mapping.getFields()) {
@@ -89,7 +100,7 @@ public class MappingSet implements Serializable {
     }
 
     @SuppressWarnings("unchecked")
-    private static void addToFieldTable(Field field, String parent, Map<String, Object[]> fieldTable, Collection<String> includeFields) {
+    private static void addToFieldTable(Field field, String parent, Map<String, Object[]> fieldTable, Set<String> includeFields) {
         String fullName = parent + field.name();
         Object[] entry = fieldTable.get(fullName);
         if (!includeFields.isEmpty() && !includeFields.contains(fullName)) {

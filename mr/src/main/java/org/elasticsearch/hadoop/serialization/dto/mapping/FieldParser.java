@@ -19,7 +19,12 @@
 
 package org.elasticsearch.hadoop.serialization.dto.mapping;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.elasticsearch.hadoop.EsHadoopIllegalArgumentException;
 import org.elasticsearch.hadoop.serialization.FieldType;
@@ -49,7 +54,7 @@ public final class FieldParser {
      * @return MappingSet for that response.
      */
     public static MappingSet parseMappings(Map<String, Object> content, boolean includeTypeName) {
-        return parseMappings(content, includeTypeName, Collections.emptyList());
+        return parseMappings(content, includeTypeName, Collections.emptySet());
     }
 
     /**
@@ -57,10 +62,10 @@ public final class FieldParser {
      * @param content entire mapping request body for all indices and types
      * @param includeTypeName true if the given content to be parsed includes type names within the structure,
      *                        or false if it is in the typeless format
-     * @param includeFields list of field that should have mapping checked
+     * @param includeFields set of fields that should have mapping checked
      * @return MappingSet for that response.
      */
-    public static MappingSet parseMappings(Map<String, Object> content, boolean includeTypeName, Collection<String> includeFields) {
+    public static MappingSet parseMappings(Map<String, Object> content, boolean includeTypeName, Set<String> includeFields) {
         Iterator<Map.Entry<String, Object>> indices = content.entrySet().iterator();
         List<Mapping> indexMappings = new ArrayList<Mapping>();
         while(indices.hasNext()) {

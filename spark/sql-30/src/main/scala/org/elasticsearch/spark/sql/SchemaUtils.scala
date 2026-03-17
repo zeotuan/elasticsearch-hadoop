@@ -87,7 +87,7 @@ private[sql] object SchemaUtils {
         getInnerMostType(dataType) match {
           case s: StructType =>
             val nestedFields = s.fields.map(f => (s"$name.${f.name}", f.dataType))
-            flattenFields(nestedFields ++ tail, acc :+ name)
+            flattenFields(nestedFields ++ tail, name +: acc)
           case _ =>
             flattenFields(tail, name +: acc)
         }
@@ -106,7 +106,7 @@ private[sql] object SchemaUtils {
     val repo = new RestRepository(cfg)
     try {
       if (repo.resourceExists(true)) {
-        val mappingSet = repo.getMappings(includeFields.asJava)
+        val mappingSet = repo.getMappings(new java.util.HashSet[String](includeFields.asJava))
         if (mappingSet == null || mappingSet.isEmpty) {
           throw new EsHadoopIllegalArgumentException(s"Cannot find mapping for ${cfg.getResourceRead} - one is required before using Spark SQL")
         }

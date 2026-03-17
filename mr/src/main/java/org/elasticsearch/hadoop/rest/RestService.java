@@ -211,6 +211,10 @@ public abstract class RestService implements Serializable {
         }
     }
 
+    public static List<PartitionDefinition> findPartitions(Settings settings, Log log) {
+        return findPartitions(settings, log, null);
+    }
+
     @SuppressWarnings("unchecked")
     public static List<PartitionDefinition> findPartitions(Settings settings, Log log, Mapping resolvedMapping) {
         Version.logVersion();
