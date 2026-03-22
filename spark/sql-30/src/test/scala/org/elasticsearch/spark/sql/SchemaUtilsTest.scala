@@ -281,7 +281,6 @@ class SchemaUtilsTest {
       .add("name", StringType)
       .add("address", addressType)
     val result = structToColumnsNames(Some(schema))
-    // Should include parent and children
     assertTrue(result.contains("name"))
     assertTrue(result.contains("address"))
     assertTrue(result.contains("address.street"))
@@ -297,7 +296,6 @@ class SchemaUtilsTest {
     val schema = new StructType()
       .add("items", ArrayType(itemType))
     val result = structToColumnsNames(Some(schema))
-    // Arrays of structs should unwrap and include parent + children
     assertTrue(result.contains("items"))
     assertTrue(result.contains("items.id"))
     assertTrue(result.contains("items.value"))
@@ -329,7 +327,7 @@ class SchemaUtilsTest {
 
   @Test
   def testStructToColumnsNamesWithMapType(): Unit = {
-    // MapType should be treated as a leaf — only the field name is included, no recursion into value type
+    // MapType is treated as a leaf — no recursion into value type
     val schema = new StructType()
       .add("tags", MapType(StringType, StringType))
       .add("name", StringType)
@@ -341,13 +339,12 @@ class SchemaUtilsTest {
 
   @Test
   def testStructToColumnsNamesWithMapOfStruct(): Unit = {
-    // MapType with StructType values should still be treated as a leaf
+    // MapType with StructType values is still treated as a leaf
     val innerType = new StructType().add("city", StringType)
     val schema = new StructType()
       .add("addresses", MapType(StringType, innerType))
     val result = structToColumnsNames(Some(schema))
     assertTrue(result.contains("addresses"))
-    // Should NOT contain addresses.city — MapType is a leaf
     assertEquals(1, result.size)
   }
 }
