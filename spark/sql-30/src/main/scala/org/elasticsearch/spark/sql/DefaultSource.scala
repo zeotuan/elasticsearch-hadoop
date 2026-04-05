@@ -652,6 +652,8 @@ private[sql] case class ElasticsearchRelation(parameters: Map[String, String], @
       ConfigurationOptions.ES_NET_HTTP_AUTH_PASS,
       ConfigurationOptions.ES_NET_PROXY_HTTP_USER,
       ConfigurationOptions.ES_NET_PROXY_HTTP_PASS,
+      ConfigurationOptions.ES_NET_PROXY_HTTPS_USER,
+      ConfigurationOptions.ES_NET_PROXY_HTTPS_PASS,
       ConfigurationOptions.ES_NET_PROXY_SOCKS_USER,
       ConfigurationOptions.ES_NET_PROXY_SOCKS_PASS,
       ConfigurationOptions.ES_NET_SSL_TRUST_STORE_PASS,
