@@ -8,7 +8,7 @@ on:
       publishGroupId:
         description: "Maven groupId to publish under"
         required: false
-        default: "com.github.zeotuan"
+        default: "io.github.zeotuan"
       publishingType:
         description: "USER_MANAGED (manual release in portal) or AUTOMATIC"
         required: false
@@ -47,7 +47,7 @@ jobs:
           SIGNING_KEY="$(echo "$PGP_SECRET" | base64 --decode)"
           ./gradlew publishAggregationToCentralPortal \
             --no-daemon \
-            -PpublishGroupId=${{ github.event.inputs.publishGroupId || 'com.github.zeotuan' }} \
+            -PpublishGroupId=${{ github.event.inputs.publishGroupId || 'io.github.zeotuan' }} \
             -PcentralPublishingType=${{ github.event.inputs.publishingType || 'USER_MANAGED' }} \
             -PsigningKey="$SIGNING_KEY" \
             -PsigningPassword="$PGP_PASSPHRASE"
