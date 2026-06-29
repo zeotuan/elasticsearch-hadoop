@@ -1,6 +1,8 @@
 name: Publish to Maven Central (Sonatype)
 
 on:
+  push:
+    branches: [ "TPM/maven-central-publish" ]
   workflow_dispatch:
     inputs:
       publishGroupId:
