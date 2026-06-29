@@ -9,6 +9,10 @@ on:
         description: "Maven groupId to publish under"
         required: false
         default: "io.github.zeotuan"
+      publishVersion:
+        description: "Artifact version to publish (fork-specific, avoids clashing with official releases)"
+        required: false
+        default: "9.2.0-zeotuan-1"
       publishingType:
         description: "USER_MANAGED (manual release in portal) or AUTOMATIC"
         required: false
@@ -48,6 +52,7 @@ jobs:
           ./gradlew publishAggregationToCentralPortal \
             --no-daemon \
             -PpublishGroupId=${{ github.event.inputs.publishGroupId || 'io.github.zeotuan' }} \
+            -PpublishVersion=${{ github.event.inputs.publishVersion || '9.2.0-zeotuan-1' }} \
             -PcentralPublishingType=${{ github.event.inputs.publishingType || 'USER_MANAGED' }} \
             -PsigningKey="$SIGNING_KEY" \
             -PsigningPassword="$PGP_PASSPHRASE"
