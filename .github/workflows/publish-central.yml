@@ -30,14 +30,15 @@ jobs:
 
       - name: Publish aggregation to Central Portal
         run: |
+          SIGNING_KEY="$(echo "$PGP_SECRET" | base64 --decode)"
           ./gradlew publishAggregationToCentralPortal \
             --no-daemon \
             -PpublishGroupId=${{ github.event.inputs.publishGroupId || 'com.github.zeotuan' }} \
             -PcentralPublishingType=${{ github.event.inputs.publishingType || 'USER_MANAGED' }} \
             -PsigningKey="$SIGNING_KEY" \
-            -PsigningPassword="$SIGNING_PASSWORD"
+            -PsigningPassword="$PGP_PASSPHRASE"
         env:
-          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
-          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+          CENTRAL_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
