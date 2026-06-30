@@ -423,8 +423,24 @@ class BuildPlugin implements Plugin<Project> {
                     "org/elasticsearch/hadoop/util/**",
                     "org/apache/hadoop/hive/**"
             ]
-            // Set javadoc executable to runtime Java (1.8)
-            javadoc.executable = new File(project.ext.runtimeJavaHome, 'bin/javadoc')
+            // Spark 4.x is compiled for Java 17 (4.0) / Java 21 (4.1), so a Java 8 javadoc tool cannot read
+            // those dependency class files. Use the newest configured JDK for javadoc (it still documents the
+            // Java 8 modules just fine) so the Maven-Central-required javadoc jars build for every module.
+            def javadocHome = project.ext.runtimeJavaHome
+            if (project.ext.has('javaVersions')) {
+                def newerJdk = project.ext.javaVersions?.find { it.version == 21 }?.javaHome?.getOrNull() ?:
+                        project.ext.javaVersions?.find { it.version == 17 }?.javaHome?.getOrNull()
+                if (newerJdk != null) {
+                    javadocHome = newerJdk
+                }
+            }
+            javadoc.executable = new File(javadocHome, 'bin/javadoc')
+
+            // External javadoc links are fetched online at doc-generation time; some (e.g. the old Hive
+            // r1.2.2 docs) are no longer reachable and return 404 for package-list/element-list, which would
+            // otherwise fail the build. The javadoc jars are only needed to satisfy Maven Central, so don't
+            // let an unreachable external link block publishing.
+            javadoc.failOnError = false
 
             MinimalJavadocOptions javadocOptions = javadoc.getOptions()
             javadocOptions.docFilesSubDirs = true
@@ -456,6 +472,7 @@ class BuildPlugin implements Plugin<Project> {
                 sparkVarients.featureVariants { SparkVariant variant ->
                     Javadoc variantJavadoc = project.tasks.getByName(variant.taskName('javadoc')) as Javadoc
                     variantJavadoc.source(project.configurations.getByName(variant.configuration('javadocSources')))
+                    variantJavadoc.failOnError = false
                 }
             }
         }
@@ -541,10 +558,14 @@ class BuildPlugin implements Plugin<Project> {
         project.getPluginManager().apply("com.gradleup.nmcp")
         project.getPluginManager().apply("signing")
 
+        // Allow overriding the published groupId via gradle property (e.g., -PpublishGroupId=io.github.zeotuan)
+        String publishGroup = project.findProperty('publishGroupId') ?: project.getGroup()
+
         // Configure Maven publication
         project.publishing {
             publications {
                 main(MavenPublication) {
+                    groupId = publishGroup
                     from project.components.java
                     suppressAllPomMetadataWarnings() // We get it. Gradle metadata is better than Maven Poms
                 }
@@ -632,6 +653,7 @@ class BuildPlugin implements Plugin<Project> {
                 project.publishing {
                     publications {
                         MavenPublication variantPublication = create(variant.getName(), MavenPublication) {
+                            groupId = publishGroup
                             from variantComponent
                             suppressAllPomMetadataWarnings() // We get it. Gradle metadata is better than Maven Poms
                         }
@@ -802,7 +824,19 @@ class BuildPlugin implements Plugin<Project> {
 
         integrationTest.ignoreFailures = false
 
-        integrationTest.executable = "${project.ext.get('runtimeJavaHome')}/bin/java"
+        // Default to runtimeJavaHome (Java 8) now, but allow Spark modules to
+        // override the executable in their build.gradle (e.g. to Java 17) since various Spark versions require
+        // different Java versions.
+        // We use afterEvaluate to check: if the executable was changed by the
+        // subproject, we keep that override; otherwise we ensure runtimeJavaHome is used.
+        String runtimeJavaExecutable = "${project.ext.get('runtimeJavaHome')}/bin/java"
+        integrationTest.executable = runtimeJavaExecutable
+        project.afterEvaluate {
+            if (integrationTest.executable == runtimeJavaExecutable) {
+                // No override was applied; ensure runtimeJavaHome (Java 8) is used
+                integrationTest.executable = runtimeJavaExecutable
+            }
+        }
         integrationTest.minHeapSize = "256m"
         integrationTest.maxHeapSize = "2g"
 

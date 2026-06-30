@@ -8,6 +8,7 @@ plugins {
   id "com.gradle.develocity" version "4.2.2"
 }
 
+
 rootProject.name = "elasticsearch-hadoop"
 
 include 'thirdparty'
@@ -24,6 +25,18 @@ project(":spark-core").name = "elasticsearch-spark"
 include 'sql-30'
 project(":sql-30").projectDir = new File(settingsDir, "spark/sql-30")
 project(":sql-30").name = "elasticsearch-spark-30"
+
+include 'sql-35'
+project(":sql-35").projectDir = new File(settingsDir, "spark/sql-35")
+project(":sql-35").name = "elasticsearch-spark-35"
+
+include 'sql-40'
+project(":sql-40").projectDir = new File(settingsDir, "spark/sql-40")
+project(":sql-40").name = "elasticsearch-spark-40"
+
+include 'sql-41'
+project(":sql-41").projectDir = new File(settingsDir, "spark/sql-41")
+project(":sql-41").name = "elasticsearch-spark-41"
 
 include 'dist'
 
