@@ -17,14 +17,21 @@ apply plugin: 'com.gradleup.nmcp.aggregation'
 defaultTasks 'build'
 
 dependencies {
-    nmcpAggregation(project(":dist"))
     nmcpAggregation(project(":elasticsearch-hadoop-mr"))
     nmcpAggregation(project(":elasticsearch-hadoop-hive"))
-    nmcpAggregation(project(":elasticsearch-spark"))
     nmcpAggregation(project(":elasticsearch-spark-30"))
     nmcpAggregation(project(":elasticsearch-spark-35"))
     nmcpAggregation(project(":elasticsearch-spark-40"))
     nmcpAggregation(project(":elasticsearch-spark-41"))
+}
+
+nmcpAggregation {
+    centralPortal {
+        username = providers.gradleProperty('centralUsername').orElse(providers.environmentVariable('CENTRAL_USERNAME')).getOrElse('')
+        password = providers.gradleProperty('centralPassword').orElse(providers.environmentVariable('CENTRAL_PASSWORD')).getOrElse('')
+        // USER_MANAGED requires manual release in the portal UI; AUTOMATIC publishes immediately
+        publishingType = providers.gradleProperty('centralPublishingType').getOrElse('USER_MANAGED')
+    }
 }
 
 tasks.named('zipAggregation').configure {

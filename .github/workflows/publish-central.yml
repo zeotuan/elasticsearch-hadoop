@@ -1,0 +1,64 @@
+name: Publish to Maven Central (Sonatype)
+
+on:
+  push:
+    branches: [ "spark-versions-support" ]
+  workflow_dispatch:
+    inputs:
+      publishGroupId:
+        description: "Maven groupId to publish under"
+        required: false
+        default: "io.github.zeotuan"
+      publishVersion:
+        description: "Artifact version to publish (fork-specific, avoids clashing with official releases)"
+        required: false
+        default: "9.2.0-zeotuan-1"
+      publishingType:
+        description: "USER_MANAGED (manual release in portal) or AUTOMATIC"
+        required: false
+        default: "USER_MANAGED"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDKs
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            8
+            11
+            17
+            21
+
+      - name: Export JDK home env vars
+        run: |
+          echo "JAVA8_HOME=$JAVA_HOME_8_X64" >> "$GITHUB_ENV"
+          echo "JAVA11_HOME=$JAVA_HOME_11_X64" >> "$GITHUB_ENV"
+          echo "JAVA17_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          echo "JAVA21_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+          echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Publish aggregation to Central Portal
+        run: |
+          SIGNING_KEY="$(echo "$PGP_SECRET" | base64 --decode)"
+          ./gradlew publishAggregationToCentralPortal \
+            --no-daemon \
+            -Dbuild.snapshot=false \
+            -PpublishGroupId=${{ github.event.inputs.publishGroupId || 'io.github.zeotuan' }} \
+            -PpublishVersion=${{ github.event.inputs.publishVersion || '9.2.0-zeotuan-1' }} \
+            -PcentralPublishingType=${{ github.event.inputs.publishingType || 'USER_MANAGED' }} \
+            -PsigningKey="$SIGNING_KEY" \
+            -PsigningPassword="$PGP_PASSPHRASE"
+        env:
+          CENTRAL_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}

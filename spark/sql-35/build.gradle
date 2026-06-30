@@ -23,7 +23,19 @@ sparkVariants {
                 transitive = false
                 canBeResolved = true
             }
-            getByName(variant.configuration('implementation')) {
+            // The embedded dependencies (elasticsearch-hadoop-mr and elasticsearch-spark core) are shaded
+            // into the published fat jar, so they must NOT appear as POM dependencies. Routing them through
+            // compileOnly (instead of implementation) keeps them on the compile classpath while excluding
+            // them from the published runtime. This also avoids Gradle's "multiple publications with
+            // different coordinates" failure caused by the multi-variant spark-core project. They are added
+            // back to the test/itest classpaths so the in-build tests still resolve the variant via capabilities.
+            getByName(variant.configuration('compileOnly')) {
+                extendsFrom project.configurations.getByName(variant.configuration('embedded'))
+            }
+            getByName(variant.configuration('test', 'implementation')) {
+                extendsFrom project.configurations.getByName(variant.configuration('embedded'))
+            }
+            getByName(variant.configuration('itest', 'implementation')) {
                 extendsFrom project.configurations.getByName(variant.configuration('embedded'))
             }
         }
