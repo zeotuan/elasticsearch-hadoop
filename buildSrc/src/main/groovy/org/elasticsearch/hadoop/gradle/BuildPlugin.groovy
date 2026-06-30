@@ -436,8 +436,18 @@ class BuildPlugin implements Plugin<Project> {
                     "org/elasticsearch/hadoop/util/**",
                     "org/apache/hadoop/hive/**"
             ]
-            // Set javadoc executable to runtime Java (1.8)
-            javadoc.executable = new File(project.ext.runtimeJavaHome, 'bin/javadoc')
+            // Spark 4.x is compiled for Java 17 (4.0) / Java 21 (4.1), so a Java 8 javadoc tool cannot read
+            // those dependency class files. Use the newest configured JDK for javadoc (it still documents the
+            // Java 8 modules just fine) so the Maven-Central-required javadoc jars build for every module.
+            def javadocHome = project.ext.runtimeJavaHome
+            if (project.ext.has('javaVersions')) {
+                def newerJdk = project.ext.javaVersions?.find { it.version == 21 }?.javaHome?.getOrNull() ?:
+                        project.ext.javaVersions?.find { it.version == 17 }?.javaHome?.getOrNull()
+                if (newerJdk != null) {
+                    javadocHome = newerJdk
+                }
+            }
+            javadoc.executable = new File(javadocHome, 'bin/javadoc')
 
             MinimalJavadocOptions javadocOptions = javadoc.getOptions()
             javadocOptions.docFilesSubDirs = true
