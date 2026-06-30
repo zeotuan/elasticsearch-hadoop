@@ -449,6 +449,12 @@ class BuildPlugin implements Plugin<Project> {
             }
             javadoc.executable = new File(javadocHome, 'bin/javadoc')
 
+            // External javadoc links are fetched online at doc-generation time; some (e.g. the old Hive
+            // r1.2.2 docs) are no longer reachable and return 404 for package-list/element-list, which would
+            // otherwise fail the build. The javadoc jars are only needed to satisfy Maven Central, so don't
+            // let an unreachable external link block publishing.
+            javadoc.failOnError = false
+
             MinimalJavadocOptions javadocOptions = javadoc.getOptions()
             javadocOptions.docFilesSubDirs = true
             javadocOptions.outputLevel = JavadocOutputLevel.QUIET
@@ -479,6 +485,7 @@ class BuildPlugin implements Plugin<Project> {
                 sparkVarients.featureVariants { SparkVariant variant ->
                     Javadoc variantJavadoc = project.tasks.getByName(variant.taskName('javadoc')) as Javadoc
                     variantJavadoc.source(project.configurations.getByName(variant.configuration('javadocSources')))
+                    variantJavadoc.failOnError = false
                 }
             }
         }
