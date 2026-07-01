@@ -98,7 +98,7 @@ class BaseBuildPlugin implements Plugin<Project> {
      */
     private static void configureVersions(Project project) {
         if (!project.rootProject.ext.has('versionsConfigured')) {
-            project.rootProject.version = EshVersionProperties.ESHADOOP_VERSION
+            project.rootProject.version = project.findProperty('publishVersion') ?: EshVersionProperties.ESHADOOP_VERSION
             println "Building version [${project.rootProject.version}]"
 
             project.rootProject.ext.eshadoopVersion = EshVersionProperties.ESHADOOP_VERSION

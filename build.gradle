@@ -23,6 +23,15 @@ dependencies {
     nmcpAggregation(project(":elasticsearch-spark-30"))
 }
 
+nmcpAggregation {
+    centralPortal {
+        username = providers.gradleProperty('centralUsername').orElse(providers.environmentVariable('CENTRAL_USERNAME')).getOrElse('')
+        password = providers.gradleProperty('centralPassword').orElse(providers.environmentVariable('CENTRAL_PASSWORD')).getOrElse('')
+        // USER_MANAGED requires manual release in the portal UI; AUTOMATIC publishes immediately
+        publishingType = providers.gradleProperty('centralPublishingType').getOrElse('USER_MANAGED')
+    }
+}
+
 tasks.named('zipAggregation').configure {
     archiveFileName.unset();
     archiveBaseName.set("elasticsearch-hadoop-maven-aggregation")
