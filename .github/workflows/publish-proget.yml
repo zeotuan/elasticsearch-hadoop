@@ -1,16 +1,18 @@
-name: Publish to GitHub Packages
+name: Publish to WTG-Maven (ProGet)
 
 on:
   push:
     tags: [ "v*" ]
   workflow_dispatch:
+    inputs:
+      publishGroupId:
+        description: "Maven groupId to publish under"
+        required: false
+        default: "com.github.zeotuan"
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
       - uses: actions/checkout@v4
@@ -36,15 +38,15 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Publish elasticsearch-spark-30 to GitHub Packages
+      - name: Publish elasticsearch-spark-30 to WTG-Maven (ProGet)
         run: |
-          ./gradlew :elasticsearch-spark-30:publishAllPublicationsToGitHubPackagesRepository \
+          ./gradlew :elasticsearch-spark-30:publishAllPublicationsToProGetRepository \
             --no-daemon \
-            -PpublishGroupId=com.github.zeotuan \
+            -PpublishGroupId=${{ github.event.inputs.publishGroupId || 'com.github.zeotuan' }} \
             -x javadoc -x spark30scala212Javadoc -x spark30scala212JavadocJar \
             -x spark35scala212Javadoc -x spark35scala212JavadocJar \
             -x spark35scala213Javadoc -x spark35scala213JavadocJar \
             -x javadocJar
         env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROGET_USERNAME: ${{ secrets.PROGET_USERNAME }}
+          PROGET_PASSWORD: ${{ secrets.PROGET_PASSWORD }}
